@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Happy Birthday, Shaifali - Family Feud!</title>
+   <!-- Load Inter font from Google Fonts -->
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+   <script src="https://cdn.tailwindcss.com"></script>
+   <!-- Firebase SDKs -->
+   <script type="module">
+       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+       import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+       import { getFirestore, doc, getDoc, setDoc, collection, query, where, addDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+
+       // Global Firebase variables accessible to other scripts
+       window.firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+       window.initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+       window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+
+       // Initialize Firebase
+       window.firebaseApp = initializeApp(window.firebaseConfig);
+       window.db = getFirestore(window.firebaseApp);
+       window.auth = getAuth(window.firebaseApp);
+
+
+       // Make Firebase functions globally accessible
+       window.onAuthStateChanged = onAuthStateChanged;
+       window.collection = collection;
+       window.query = query;
+       window.where = where;
+       window.addDoc = addDoc;
+       window.getDocs = getDocs;
+       window.onSnapshot = onSnapshot; // In case onSnapshot is used directly outside the module
+
+
+       // Sign in anonymously or with custom token
+       window.onAuthStateChanged(window.auth, async (user) => {
+           if (!user) {
+               try {
+                   if (window.initialAuthToken) {
+                       await signInWithCustomToken(window.auth, window.initialAuthToken);
+                       console.log("Signed in with custom token.");
+                   } else {
+                       await signInAnonymously(window.auth);
+                       console.log("Signed in anonymously.");
+                   }
+               } catch (error) {
+                   console.error("Firebase authentication error:", error);
+                   // showMessage("Failed to authenticate with Firebase. Please try again.", "error"); // Cannot call showMessage before it's defined
+               }
+           } else {
+               window.currentUserId = user.uid;
+               console.log("Firebase initialized. User ID:", window.currentUserId);
+           }
+       });
+   </script>
+   <style>
+       /* Custom CSS for a festive and game-like feel */
+       body {
+           font-family: 'Inter', sans-serif;
+           margin: 0;
+           padding: 0;
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           min-height: 100vh;
+           background: linear-gradient(135deg, #f7f9fc 0%, #e0e6ed 100%);
+           color: #333;
+           overflow: auto; /* Allow scrolling for smaller screens */
+       }
+
+
+       .game-container {
+           background-color: #ffffff;
+           border-radius: 20px;
+           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+           padding: 30px;
+           max-width: 90%;
+           width: 800px;
+           text-align: center;
+           transition: all 0.3s ease-in-out;
+           margin: 20px; /* Add margin for spacing */
+       }
+
+
+       @media (max-width: 768px) {
+           .game-container {
+               padding: 20px;
+               margin: 10px;
+           }
+       }
+
+
+       h1, h2 {
+           color: #4a5568;
+           font-weight: 700;
+           margin-bottom: 20px;
+       }
+
+
+       h1 {
+           font-size: 2.5em;
+           letter-spacing: -0.025em;
+       }
+
+
+       h2 {
+           font-size: 1.8em;
+           margin-top: 20px;
+       }
+
+
+       .btn {
+           background-color: #6366f1;
+           color: white;
+           padding: 12px 25px;
+           border-radius: 10px;
+           font-weight: 700;
+           cursor: pointer;
+           transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+           box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+           border: none;
+           display: inline-block;
+           margin-top: 20px;
+           margin-left: 10px; /* For spacing between buttons */
+           margin-right: 10px;
+       }
+
+
+       .btn:hover {
+           background-color: #4f46e5;
+           transform: translateY(-2px);
+           box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+       }
+
+
+       .btn:active {
+           transform: translateY(0);
+           box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+       }
+
+
+       .answers-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+           gap: 15px;
+           margin-top: 30px;
+           justify-content: center;
+       }
+
+
+       .answer-slot {
+           background-color: #edf2f7;
+           border-radius: 10px;
+           padding: 15px;
+           min-height: 60px;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           font-size: 1.2em;
+           font-weight: 600;
+           color: #4a5568;
+           border: 2px solid #e2e8f0;
+           cursor: pointer; /* Indicate clickable */
+           transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.1s ease;
+       }
+
+
+       .answer-slot:not(.revealed):hover {
+           background-color: #e0e6ed;
+           border-color: #a0aec0;
+           transform: translateY(-2px);
+       }
+
+
+       .answer-slot.revealed {
+           background-color: #d1fae5; /* Light green for revealed answers */
+           border-color: #34d399; /* Green border */
+           color: #065f46;
+           cursor: default; /* Not clickable once revealed */
+       }
+
+
+       .answer-slot.selected-by-player {
+           background-color: #a7f3d0; /* Highlight player's choice */
+           border-color: #059669;
+       }
+
+
+       .answer-slot.shaifali-choice {
+           background-color: #fce7f3; /* Light pink for Shaifali's choice */
+           border-color: #db2777;
+           color: #831843;
+       }
+
+
+       .answer-slot.selected-by-family {
+           background-color: #e0f2fe; /* Light blue for family response indication */
+           border-color: #38bdf8;
+       }
+
+
+       .answer-text {
+           flex-grow: 1;
+           text-align: left;
+       }
+
+
+       .answer-points {
+           font-size: 0.9em;
+           color: #6b7280;
+           padding: 5px 10px;
+           background-color: #cbd5e0;
+           border-radius: 5px;
+           margin-left: 10px;
+       }
+
+
+       .revealed .answer-points, .shaifali-choice .answer-points {
+           background-color: #10b981; /* Darker green for revealed points */
+           color: white;
+       }
+
+
+       .family-count {
+           font-size: 0.9em;
+           color: #1d4ed8;
+           padding: 5px 10px;
+           background-color: #bfdbfe;
+           border-radius: 5px;
+           margin-left: 10px;
+       }
+
+
+       .score-display {
+           font-size: 1.5em;
+           font-weight: 700;
+           margin-top: 25px;
+           color: #38a169; /* Green for score */
+       }
+
+
+       .message-box {
+           background-color: #fff3cd;
+           color: #856404;
+           border: 1px solid #ffeeba;
+           border-radius: 8px;
+           padding: 15px;
+           margin-top: 20px;
+           display: none; /* Hidden by default */
+           font-size: 1.1em;
+       }
+
+
+       .message-box.show {
+           display: block;
+       }
+
+
+       .hearts-container {
+           margin-top: 20px;
+           display: flex;
+           justify-content: center;
+           gap: 10px;
+       }
+
+
+       .heart {
+           font-size: 2em;
+           color: #ef4444; /* Red heart */
+           animation: pulse 1s infinite alternate;
+       }
+
+
+       .heart.lost {
+           opacity: 0.3; /* Dim lost hearts */
+           animation: none; /* Stop pulse when lost */
+       }
+
+
+       @keyframes pulse {
+           from { transform: scale(1); }
+           to { transform: scale(1.1); }
+       }
+
+
+       /* Birthday message styling */
+       .birthday-message {
+           font-size: 2.2em;
+           color: #ef4444; /* Red color for birthday message */
+           margin-top: 30px;
+           line-height: 1.4;
+           animation: bounceIn 1s forwards;
+       }
+
+
+       @keyframes bounceIn {
+           0% { transform: scale(0.3); opacity: 0; }
+           50% { transform: scale(1.05); opacity: 1; }
+           70% { transform: scale(0.9); }
+           100% { transform: scale(1); }
+       }
+
+
+       .confetti {
+           position: absolute;
+           width: 10px;
+           height: 10px;
+           background-color: var(--color);
+           border-radius: 50%;
+           opacity: 0;
+           animation: confetti-fall 3s linear forwards;
+           pointer-events: none; /* Ensure confetti doesn't block clicks */
+       }
+
+
+       @keyframes confetti-fall {
+           0% { transform: translateY(-100px) rotateZ(0deg); opacity: 1; }
+           100% { transform: translateY(100vh) rotateZ(720deg); opacity: 0; }
+       }
+
+
+       .loading-overlay {
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           background-color: rgba(255, 255, 255, 0.8);
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           font-size: 1.5em;
+           font-weight: bold;
+           color: #6366f1;
+           z-index: 1000;
+           display: none; /* Hidden by default */
+       }
+   </style>
+</head>
+<body>
+   <div class="loading-overlay" id="loadingOverlay">
+       Loading...
+   </div>
+
+
+   <div class="game-container" id="gameContainer">
+       <!-- Mode Selection Screen -->
+       <div id="modeSelectionScreen">
+           <h1 class="text-4xl">Happy Birthday, Shaifali!</h1>
+           <p class="text-lg text-gray-700 mt-4">Welcome to the Family Feud Birthday Special!</p>
+           <p class="text-md text-gray-600 mt-2">Please select your role:</p>
+           <button id="familyMemberModeButton" class="btn">I am a Family Member (Submit Answers)</button>
+           <button id="birthdayRevealModeButton" class="btn">I am Shaifali (Reveal Answers!)</button>
+       </div>
+
+
+       <!-- Family Member Mode Screen (collecting responses) -->
+       <div id="familyMemberScreen" class="hidden">
+           <h2 id="fmQuestionText" class="text-3xl text-blue-700"></h2>
+           <p class="text-md text-gray-600 mt-2">Click on the option you think Shaifali would choose!</p>
+           <div class="answers-grid" id="fmAnswersGrid">
+               <!-- Answer slots will be dynamically added here -->
+           </div>
+           <p id="fmFeedback" class="text-lg mt-4"></p>
+           <button id="fmNextQuestionButton" class="btn next-btn hidden">Next Question</button>
+           <button id="fmFinishButton" class="btn hidden">Finish Submitting</button>
+           <button id="fmRestartButton" class="btn mt-4 hidden">Start Over (Family Member)</button>
+       </div>
+
+
+       <!-- Birthday Reveal Mode Screen (for Shaifali) -->
+       <div id="birthdayRevealScreen" class="hidden">
+           <h2 id="brQuestionText" class="text-3xl text-blue-700"></h2>
+           <p class="text-md text-gray-600 mt-2">Shaifali, what's YOUR answer?</p>
+           <div class="answers-grid" id="brAnswersGrid">
+               <!-- Answer slots for Shaifali to select -->
+           </div>
+           <div class="hearts-container" id="brHeartsContainer">
+               <!-- Hearts not used in this mode, but kept for consistency if needed -->
+           </div>
+           <div class="score-display">Shaifali's Score: <span id="brScoreDisplay">0</span></div>
+           <button id="brRevealFamilyAnswersButton" class="btn mt-4">Reveal Family Answers</button>
+           <button id="brNextQuestionButton" class="btn next-btn hidden">Next Question</button>
+           <button id="brRestartButton" class="btn mt-4 hidden">Start Over (Birthday Reveal)</button>
+       </div>
+
+
+       <!-- End Screen for Family Member Mode -->
+       <div id="fmEndScreen" class="hidden">
+           <h1 class="text-4xl">Thank You for Participating!</h1>
+           <p class="text-xl text-gray-700 mt-6">Your answers have been recorded for Shaifali's birthday surprise!</p>
+           <p class="text-xl text-gray-700 mt-4">Come back on her birthday for the big reveal!</p>
+           <button id="fmPlayAgainButton" class="btn">Submit More Answers</button>
+       </div>
+
+
+       <!-- End Screen for Birthday Reveal Mode -->
+       <div id="brEndScreen" class="hidden">
+           <h1 class="text-5xl birthday-message">Happy Birthday, Shaifali!</h1>
+           <p class="text-xl text-gray-700 mt-6">Your final score is: <span id="brFinalScoreDisplay" class="font-bold text-green-600">0</span> points!</p>
+           <p class="text-xl text-gray-700 mt-4">You're the best wife and we love you very much!</p>
+           <button id="brPlayAgainButton" class="btn">Play Again (Reveal Mode)</button>
+       </div>
+
+
+       <!-- Message Box for general alerts -->
+       <div id="messageBox" class="message-box mt-4"></div>
+   </div>
+
+
+   <script type="module">
+       // Ensure Firebase is initialized before accessing db/auth
+       // This script will run after the firebase.js module
+       const WIFE_NAME = "Shaifali";
+       const MAX_INCORRECT_GUESSES = 3; // Only relevant for the old game type, kept here for potential future use or if Shaifali's mode uses it.
+       let currentQuestionIndex = 0;
+       let shaifaliScore = 0;
+       let incorrectGuesses = 0; // Not used in Family Member mode, but can be for Shaifali's selection
+       let gameMode = ''; // 'collect_responses' or 'birthday_reveal'
+       let currentUserAnswered = new Set(); // Track questions current user has answered in 'collect_responses' mode
+
+
+       // Define questions globally
+       const allQuestions = [
+           {
+               id: 'q1', // Unique ID for Firestore
+               question: `Who does Shaifali miss the most?`,
+               answers: [
+                   { text: "Mother", points: 40 },
+                   { text: "Father", points: 30 },
+                   { text: "Ritul (Brother)", points: 20 },
+                   { text: "Grandparents", points: 10 }
+               ]
+           },
+           {
+               id: 'q2',
+               question: `Who does Shaifali love the most?`,
+               answers: [
+                   { text: "Mother", points: 40 },
+                   { text: "Father", points: 30 },
+                   { text: "Ritul (Brother)", points: 20 },
+                   { text: "Kamal Aunty", points: 10 }
+               ]
+           },
+           {
+               id: 'q3',
+               question: `Where does Shaifali want to go for a vacation?`,
+               answers: [
+                   { text: "Kharar", points: 50 },
+                   { text: "Beach Resort", points: 30 },
+                   { text: "Mountain Getaway", points: 15 },
+                   { text: "European City", points: 5 }
+               ]
+           },
+           {
+               id: 'q4',
+               question: `What is Shaifali's favorite food?`,
+               answers: [
+                   { text: "Pasta", points: 50 },
+                   { text: "Pizza", points: 30 },
+                   { text: "Indian Cuisine", points: 15 },
+                   { text: "Sushi", points: 5 }
+               ]
+           },
+           {
+               id: 'q5',
+               question: `What does Shaifali like to do in her free time?`,
+               answers: [
+                   { text: "Cooking", points: 40 },
+                   { text: "Reading", points: 30 },
+                   { text: "Gardening", points: 20 },
+                   { text: "Watching Movies/TV", points: 10 }
+               ]
+           },
+           {
+               id: 'q6',
+               question: `What is Shaifali's profession?`,
+               answers: [
+                   { text: "Dentist", points: 50 },
+                   { text: "Doctor", points: 30 },
+                   { text: "Teacher", points: 15 },
+                   { text: "Engineer", points: 5 }
+               ]
+           },
+           {
+               id: 'q7',
+               question: `Where does Shaifali like to sit in a car?`,
+               answers: [
+                   { text: "Front Passenger Seat", points: 50 },
+                   { text: "Driver's Seat", points: 30 },
+                   { text: "Back Seat (Left)", points: 15 },
+                   { text: "Back Seat (Right)", points: 5 }
+               ]
+           },
+           {
+               id: 'q8',
+               question: `What is Shaifali's favorite color?`,
+               answers: [
+                   { text: "Pink", points: 40 },
+                   { text: "Blue", points: 30 },
+                   { text: "Purple", points: 20 },
+                   { text: "Green", points: 10 }
+               ]
+           },
+           {
+               id: 'q9',
+               question: `What kind of music does Shaifali prefer?`,
+               answers: [
+                   { text: "Bollywood Hits", points: 40 },
+                   { text: "Pop", points: 30 },
+                   { text: "Classical", points: 20 },
+                   { text: "Rock", points: 10 }
+               ]
+           },
+           {
+               id: 'q10',
+               question: `What is Shaifali's favorite season?`,
+               answers: [
+                   { text: "Spring", points: 40 },
+                   { text: "Winter", points: 30 },
+                   { text: "Summer", points: 20 },
+                   { text: "Autumn", points: 10 }
+               ]
+           }
+           // Add more questions here if needed!
+       ];
+
+
+       // DOM Elements
+       const modeSelectionScreen = document.getElementById('modeSelectionScreen');
+       const familyMemberScreen = document.getElementById('familyMemberScreen');
+       const birthdayRevealScreen = document.getElementById('birthdayRevealScreen');
+       const fmEndScreen = document.getElementById('fmEndScreen');
+       const brEndScreen = document.getElementById('brEndScreen');
+
+
+       const familyMemberModeButton = document.getElementById('familyMemberModeButton');
+       const birthdayRevealModeButton = document.getElementById('birthdayRevealModeButton');
+
+
+       // Family Member Mode Elements
+       const fmQuestionText = document.getElementById('fmQuestionText');
+       const fmAnswersGrid = document.getElementById('fmAnswersGrid');
+       const fmFeedback = document.getElementById('fmFeedback');
+       const fmNextQuestionButton = document.getElementById('fmNextQuestionButton');
+       const fmFinishButton = document.getElementById('fmFinishButton');
+       const fmPlayAgainButton = document.getElementById('fmPlayAgainButton');
+       const fmRestartButton = document.getElementById('fmRestartButton');
+
+
+       // Birthday Reveal Mode Elements
+       const brQuestionText = document.getElementById('brQuestionText');
+       const brAnswersGrid = document.getElementById('brAnswersGrid');
+       const brHeartsContainer = document.getElementById('brHeartsContainer'); // Still present, though might not be used in the current reveal logic
+       const brScoreDisplay = document.getElementById('brScoreDisplay');
+       const brRevealFamilyAnswersButton = document.getElementById('brRevealFamilyAnswersButton');
+       const brNextQuestionButton = document.getElementById('brNextQuestionButton');
+       const brFinalScoreDisplay = document.getElementById('brFinalScoreDisplay');
+       const brPlayAgainButton = document.getElementById('brPlayAgainButton');
+       const brRestartButton = document.getElementById('brRestartButton');
+
+
+       const messageBox = document.getElementById('messageBox');
+       const loadingOverlay = document.getElementById('loadingOverlay');
+
+
+       // Replace placeholder name in the initial text
+       document.querySelector('h1').textContent = `Happy Birthday, ${WIFE_NAME}!`;
+       if(document.querySelector('#fmEndScreen h1')) {
+            document.querySelector('#fmEndScreen h1').textContent = `Thank You for Participating!`;
+       }
+       if(document.querySelector('#brEndScreen h1')) {
+           document.querySelector('#brEndScreen h1').textContent = `Happy Birthday, ${WIFE_NAME}!`;
+       }
+
+
+       /**
+        * Generic function to display a temporary message.
+        * @param {string} message - The message content.
+        * @param {'success'|'warning'|'error'} type - The type of message for styling.
+        */
+       function showMessage(message, type) {
+           messageBox.textContent = message;
+           messageBox.className = 'message-box show';
+           if (type === 'success') {
+               messageBox.style.backgroundColor = '#d4edda';
+               messageBox.style.borderColor = '#c3e6cb';
+               messageBox.style.color = '#155724';
+           } else if (type === 'error') {
+               messageBox.style.backgroundColor = '#f8d7da';
+               messageBox.style.borderColor = '#f5c6cb';
+               messageBox.style.color = '#721c24';
+           } else {
+               messageBox.style.backgroundColor = '#fff3cd';
+               messageBox.style.borderColor = '#ffeeba';
+               messageBox.style.color = '#856404';
+           }
+           setTimeout(() => {
+               messageBox.classList.remove('show');
+           }, 3000);
+       }
+
+
+       /**
+        * Displays or hides the loading overlay.
+        * @param {boolean} show - True to show, false to hide.
+        */
+       function showLoading(show) {
+           loadingOverlay.style.display = show ? 'flex' : 'none';
+       }
+
+
+       /**
+        * Shuffles an array in place (Fisher-Yates algorithm).
+        * @param {Array} array - The array to shuffle.
+        * @returns {Array} The shuffled array.
+        */
+       function shuffleArray(array) {
+           for (let i = array.length - 1; i > 0; i--) {
+               const j = Math.floor(Math.random() * (i + 1));
+               [array[i], array[j]] = [array[j], array[i]];
+           }
+           return array;
+       }
+
+
+       // --- Game Initialization and Mode Selection ---
+       document.addEventListener('DOMContentLoaded', () => {
+           initializeGame();
+       });
+
+
+       function initializeGame() {
+           familyMemberModeButton.addEventListener('click', () => selectMode('collect_responses'));
+           birthdayRevealModeButton.addEventListener('click', () => selectMode('birthday_reveal'));
+
+
+           fmNextQuestionButton.addEventListener('click', loadNextQuestion);
+           fmFinishButton.addEventListener('click', () => endFamilyMemberMode());
+           fmPlayAgainButton.addEventListener('click', () => resetGame('collect_responses'));
+           fmRestartButton.addEventListener('click', () => resetGame('collect_responses'));
+
+
+           brRevealFamilyAnswersButton.addEventListener('click', handleRevealFamilyAnswers);
+           brNextQuestionButton.addEventListener('click', loadNextQuestion);
+           brPlayAgainButton.addEventListener('click', () => resetGame('birthday_reveal'));
+           brRestartButton.addEventListener('click', () => resetGame('birthday_reveal'));
+
+
+           // Ensure Firebase is ready before doing anything else
+           waitForFirebase(() => {
+               // If user somehow gets back to mode selection and wants to play,
+               // we can start fresh or check if they already answered.
+           });
+       }
+
+
+       /**
+        * Waits for Firebase authentication to be ready.
+        * @param {Function} callback - Function to call once Firebase is ready.
+        */
+       function waitForFirebase(callback) {
+           if (window.currentUserId) {
+               callback();
+           } else {
+               // Use the globally exposed onAuthStateChanged
+               window.onAuthStateChanged(window.auth, (user) => {
+                   if (user) {
+                       window.currentUserId = user.uid;
+                       // No need to unsubscribe if onAuthStateChanged is called outside its module,
+                       // but it's good practice to ensure it runs only once for this purpose.
+                       // However, as it's passed as a callback to onAuthStateChanged, it will be called
+                       // only once by Firebase on the initial state change.
+                       callback();
+                   }
+               });
+           }
+       }
+
+
+       /**
+        * Selects the game mode and starts the appropriate flow.
+        * @param {string} mode - 'collect_responses' or 'birthday_reveal'.
+        */
+       function selectMode(mode) {
+           gameMode = mode;
+           modeSelectionScreen.classList.add('hidden');
+           currentQuestionIndex = 0; // Reset for new mode
+           shaifaliScore = 0;
+           incorrectGuesses = 0; // Reset
+           updateScoreDisplay(); // Reset score display
+
+
+           if (gameMode === 'collect_responses') {
+               familyMemberScreen.classList.remove('hidden');
+               loadFamilyMemberQuestion(currentQuestionIndex);
+           } else { // 'birthday_reveal'
+               birthdayRevealScreen.classList.remove('hidden');
+               loadBirthdayRevealQuestion(currentQuestionIndex);
+           }
+       }
+
+
+       /**
+        * Resets the game state and UI for a specific mode, returning to mode selection if specified.
+        * @param {string} mode - The mode to reset ('collect_responses' or 'birthday_reveal').
+        */
+       function resetGame(mode, returnToModeSelection = false) {
+           if (mode === 'collect_responses') {
+               familyMemberScreen.classList.add('hidden');
+               fmEndScreen.classList.add('hidden');
+               currentUserAnswered.clear(); // Clear answered questions for this user
+               fmFeedback.textContent = '';
+               fmNextQuestionButton.classList.add('hidden');
+               fmFinishButton.classList.add('hidden');
+               fmRestartButton.classList.add('hidden');
+           } else { // 'birthday_reveal'
+               birthdayRevealScreen.classList.add('hidden');
+               brEndScreen.classList.add('hidden');
+               brNextQuestionButton.classList.add('hidden');
+               brRevealFamilyAnswersButton.classList.remove('hidden'); // Show button for next round
+               brRestartButton.classList.add('hidden');
+           }
+
+
+           if (returnToModeSelection) {
+               modeSelectionScreen.classList.remove('hidden');
+               removeConfetti();
+               gameMode = '';
+           } else {
+               selectMode(mode); // Restart current mode
+           }
+       }
+
+
+
+
+       // --- Family Member Mode Logic ---
+
+
+       /**
+        * Loads a question for family members to submit their answer.
+        * @param {number} index - The question index.
+        */
+       async function loadFamilyMemberQuestion(index) {
+           if (index >= allQuestions.length) {
+               endFamilyMemberMode();
+               return;
+           }
+
+
+           fmNextQuestionButton.classList.add('hidden');
+           fmFinishButton.classList.add('hidden');
+           fmFeedback.textContent = '';
+           showLoading(true);
+
+
+           const currentQ = allQuestions[index];
+           fmQuestionText.textContent = currentQ.question;
+           fmAnswersGrid.innerHTML = '';
+
+
+           // Check if current user has already answered this question
+           // Use the globally exposed collection and query
+           const responseDocRef = window.collection(window.db, `artifacts/${window.appId}/public/data/family_responses`);
+           const q = window.query(responseDocRef, window.where("userId", "==", window.currentUserId), window.where("questionId", "==", currentQ.id));
+
+
+           try {
+               // Use the globally exposed getDocs
+               const querySnapshot = await window.getDocs(q);
+               if (!querySnapshot.empty) {
+                   const existingAnswer = querySnapshot.docs[0].data().selectedAnswerText;
+                   fmFeedback.textContent = `You already answered this question! You picked: "${existingAnswer}"`;
+                   currentUserAnswered.add(currentQ.id); // Mark as answered locally
+                   // Still show options, but disable clicks and highlight their previous choice
+                   displayFamilyMemberOptions(currentQ.answers, existingAnswer, true); // true for disabled
+               } else {
+                   displayFamilyMemberOptions(currentQ.answers);
+               }
+           } catch (error) {
+               console.error("Error checking user answer:", error);
+               showMessage("Failed to load question status. Please try again.", "error");
+           } finally {
+               showLoading(false);
+               updateFamilyMemberNavButtons();
+           }
+       }
+
+
+       /**
+        * Displays the options for family members to select.
+        * @param {Array} answers - The answer options.
+        * @param {string} [preselectedAnswerText] - Text of an already selected answer to highlight.
+        * @param {boolean} [disableClicks=false] - If true, all options are unclickable.
+        */
+       function displayFamilyMemberOptions(answers, preselectedAnswerText = '', disableClicks = false) {
+           let shuffledAnswers = answers.map(a => ({...a})); // Clone to avoid modifying original
+           shuffleArray(shuffledAnswers);
+
+
+           fmAnswersGrid.innerHTML = ''; // Clear previous
+           shuffledAnswers.forEach((answer, i) => {
+               const answerSlot = document.createElement('div');
+               answerSlot.classList.add('answer-slot');
+               answerSlot.id = `fm-answer-slot-${i}`;
+               answerSlot.dataset.questionId = allQuestions[currentQuestionIndex].id;
+               answerSlot.dataset.answerText = answer.text;
+
+
+               if (answer.text === preselectedAnswerText) {
+                   answerSlot.classList.add('selected-by-player');
+                   answerSlot.innerHTML = `<span class="answer-text">${answer.text}</span><span class="family-count">Your Choice</span>`;
+               } else {
+                    answerSlot.innerHTML = `<span class="answer-text">${answer.text}</span>`;
+               }
+
+
+
+
+               if (!disableClicks) {
+                   answerSlot.addEventListener('click', handleFamilyMemberSelection);
+               } else {
+                   answerSlot.style.cursor = 'default';
+               }
+               fmAnswersGrid.appendChild(answerSlot);
+           });
+       }
+
+
+
+
+       /**
+        * Handles a family member selecting an answer.
+        * @param {Event} event - The click event.
+        */
+       async function handleFamilyMemberSelection(event) {
+           const selectedSlot = event.currentTarget;
+           const questionId = selectedSlot.dataset.questionId;
+           const selectedAnswerText = selectedSlot.dataset.answerText;
+
+
+           // Disable all options for this question to prevent multiple submissions
+           const allSlots = fmAnswersGrid.querySelectorAll('.answer-slot');
+           allSlots.forEach(slot => {
+               slot.removeEventListener('click', handleFamilyMemberSelection);
+               slot.style.cursor = 'default';
+           });
+
+
+           // Highlight the selected answer
+           selectedSlot.classList.add('selected-by-player');
+           selectedSlot.innerHTML = `<span class="answer-text">${selectedAnswerText}</span><span class="family-count">Your Choice</span>`;
+
+
+           showLoading(true);
+           try {
+               // Store the response in Firestore
+               // Use the globally exposed collection and addDoc
+               const responseRef = window.collection(window.db, `artifacts/${window.appId}/public/data/family_responses`);
+               await window.addDoc(responseRef, {
+                   userId: window.currentUserId,
+                   questionId: questionId,
+                   selectedAnswerText: selectedAnswerText,
+                   timestamp: new Date()
+               });
+               fmFeedback.textContent = `Thanks for your answer! You picked "${selectedAnswerText}".`;
+               currentUserAnswered.add(questionId); // Mark as answered locally
+               showMessage("Your answer has been recorded!", "success");
+           } catch (error) {
+               console.error("Error submitting family member answer:", error);
+               fmFeedback.textContent = "Failed to record your answer. Please try again.";
+               showMessage("Failed to record your answer.", "error");
+           } finally {
+               showLoading(false);
+               updateFamilyMemberNavButtons();
+           }
+       }
+
+
+       /**
+        * Updates the navigation buttons for Family Member mode.
+        */
+       function updateFamilyMemberNavButtons() {
+           const currentQ = allQuestions[currentQuestionIndex];
+           if (currentUserAnswered.has(currentQ.id)) {
+               if (currentQuestionIndex < allQuestions.length - 1) {
+                   fmNextQuestionButton.classList.remove('hidden');
+               } else {
+                   fmFinishButton.classList.remove('hidden');
+               }
+           } else {
+               fmNextQuestionButton.classList.add('hidden');
+               fmFinishButton.classList.add('hidden');
+           }
+           // Show restart button once authenticated
+           fmRestartButton.classList.remove('hidden');
+       }
+
+
+       /**
+        * Moves to the next question in Family Member mode.
+        */
+       function loadNextQuestion() {
+           currentQuestionIndex++;
+           if (currentQuestionIndex < allQuestions.length) {
+               if (gameMode === 'collect_responses') {
+                   loadFamilyMemberQuestion(currentQuestionIndex);
+               } else { // 'birthday_reveal'
+                   loadBirthdayRevealQuestion(currentQuestionIndex);
+               }
+           } else {
+               if (gameMode === 'collect_responses') {
+                   endFamilyMemberMode();
+               } else { // 'birthday_reveal'
+                   endBirthdayRevealMode();
+               }
+           }
+       }
+
+
+       /**
+        * Ends the Family Member response collection mode.
+        */
+       function endFamilyMemberMode() {
+           familyMemberScreen.classList.add('hidden');
+           fmEndScreen.classList.remove('hidden');
+       }
+
+
+       // --- Birthday Reveal Mode Logic (for Shaifali) ---
+
+
+       let shaifaliChosenAnswer = null; // Store Shaifali's selection for the current question
+
+
+       /**
+        * Loads a question for Shaifali to select her answer and then reveal family responses.
+        * @param {number} index - The question index.
+        */
+       function loadBirthdayRevealQuestion(index) {
+           if (index >= allQuestions.length) {
+               endBirthdayRevealMode();
+               return;
+           }
+
+
+           brNextQuestionButton.classList.add('hidden');
+           brRevealFamilyAnswersButton.classList.remove('hidden');
+           brRestartButton.classList.add('hidden'); // Initially hidden
+
+
+           shaifaliChosenAnswer = null; // Reset Shaifali's choice for new question
+           // No incorrect guesses for Shaifali's mode
+           // renderHearts(); // Not used in this mode, but could be for a "Shaifali vs. Family" score.
+
+
+           const currentQ = allQuestions[index];
+           brQuestionText.textContent = currentQ.question;
+           brAnswersGrid.innerHTML = '';
+
+
+           let shuffledAnswers = currentQ.answers.map(a => ({...a}));
+           shuffleArray(shuffledAnswers);
+
+
+           shuffledAnswers.forEach((answer, i) => {
+               const answerSlot = document.createElement('div');
+               answerSlot.classList.add('answer-slot');
+               answerSlot.id = `br-answer-slot-${i}`;
+               answerSlot.dataset.originalText = answer.text;
+               answerSlot.dataset.points = answer.points; // Store points for later
+               answerSlot.innerHTML = `<span class="answer-text">${answer.text}</span>`;
+               answerSlot.addEventListener('click', handleShaifaliSelection);
+               brAnswersGrid.appendChild(answerSlot);
+           });
+           updateBirthdayRevealNavButtons();
+       }
+
+
+       /**
+        * Handles Shaifali's selection of an answer.
+        * @param {Event} event - The click event.
+        */
+       function handleShaifaliSelection(event) {
+           const selectedSlot = event.currentTarget;
+           const allSlots = brAnswersGrid.querySelectorAll('.answer-slot');
+
+
+           // Clear previous selection highlight
+           allSlots.forEach(slot => {
+               slot.classList.remove('shaifali-choice');
+           });
+
+
+           // Highlight current selection
+           selectedSlot.classList.add('shaifali-choice');
+           shaifaliChosenAnswer = {
+               text: selectedSlot.dataset.originalText,
+               points: parseInt(selectedSlot.dataset.points, 10)
+           };
+           brRevealFamilyAnswersButton.classList.remove('hidden'); // Ensure button is visible after selection
+           showMessage(`Shaifali selected: ${shaifaliChosenAnswer.text}`, "success");
+       }
+
+
+       /**
+        * Reveals family answers for the current question in Birthday Reveal Mode.
+        */
+       async function handleRevealFamilyAnswers() {
+           if (!shaifaliChosenAnswer) {
+               showMessage("Shaifali, please select your answer first!", "warning");
+               return;
+           }
+
+
+           brRevealFamilyAnswersButton.classList.add('hidden'); // Hide button after Shaifali reveals
+
+
+           showLoading(true);
+           try {
+               const currentQ = allQuestions[currentQuestionIndex];
+               // Use the globally exposed collection, query, where, getDocs
+               const familyResponsesRef = window.collection(window.db, `artifacts/${window.appId}/public/data/family_responses`);
+               const q = window.query(familyResponsesRef, window.where("questionId", "==", currentQ.id));
+               const querySnapshot = await window.getDocs(q);
+
+
+               const familyCounts = {};
+               querySnapshot.forEach(doc => {
+                   const data = doc.data();
+                   familyCounts[data.selectedAnswerText] = (familyCounts[data.selectedAnswerText] || 0) + 1;
+               });
+
+
+               // Update UI to show family counts and Shaifali's score
+               const allSlots = brAnswersGrid.querySelectorAll('.answer-slot');
+               let foundShaifaliAnswer = false;
+
+
+               allSlots.forEach(slot => {
+                   const answerText = slot.dataset.originalText;
+                   const count = familyCounts[answerText] || 0;
+                   const points = parseInt(slot.dataset.points, 10);
+
+
+                   // Add family count
+                   const countSpan = document.createElement('span');
+                   countSpan.classList.add('family-count');
+                   countSpan.textContent = `Family: ${count}`;
+                   slot.appendChild(countSpan);
+
+
+                   // Add points for each option
+                   const pointsSpan = document.createElement('span');
+                   pointsSpan.classList.add('answer-points');
+                   pointsSpan.textContent = points;
+                   slot.appendChild(pointsSpan);
+
+
+
+
+                   if (answerText === shaifaliChosenAnswer.text) {
+                       if (!foundShaifaliAnswer) { // Only add score once for Shaifali's actual choice
+                           shaifaliScore += shaifaliChosenAnswer.points;
+                           updateScoreDisplay();
+                           foundShaifaliAnswer = true;
+                       }
+                   }
+                   slot.style.cursor = 'default'; // Disable clicks after revealing
+                   slot.removeEventListener('click', handleShaifaliSelection);
+               });
+               showMessage("Family answers revealed!", "success");
+           } catch (error) {
+               console.error("Error fetching family responses:", error);
+               showMessage("Failed to fetch family responses. Please try again.", "error");
+           } finally {
+               showLoading(false);
+               updateBirthdayRevealNavButtons();
+           }
+       }
+
+
+       /**
+        * Updates Shaifali's score display.
+        */
+       function updateScoreDisplay() {
+           brScoreDisplay.textContent = shaifaliScore;
+       }
+
+
+       /**
+        * Updates the navigation buttons for Birthday Reveal mode.
+        */
+       function updateBirthdayRevealNavButtons() {
+           if (currentQuestionIndex < allQuestions.length - 1) {
+               brNextQuestionButton.classList.remove('hidden');
+           } else {
+               // If it's the last question and family answers have been revealed
+               if (brRevealFamilyAnswersButton.classList.contains('hidden')) {
+                   brRestartButton.classList.remove('hidden');
+                   // Automatically end game if it's the last question and family answers are revealed
+                   setTimeout(endBirthdayRevealMode, 2000);
+               }
+           }
+       }
+
+
+       /**
+        * Ends the Birthday Reveal mode.
+        */
+       function endBirthdayRevealMode() {
+           birthdayRevealScreen.classList.add('hidden');
+           brEndScreen.classList.remove('hidden');
+           brFinalScoreDisplay.textContent = shaifaliScore;
+           celebrateBirthday();
+       }
+
+
+       /**
+        * Triggers a confetti animation for birthday celebration.
+        */
+       function celebrateBirthday() {
+           const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+           const numberOfConfetti = 100;
+
+
+           for (let i = 0; i < numberOfConfetti; i++) {
+               const confetti = document.createElement('div');
+               confetti.classList.add('confetti');
+               confetti.style.setProperty('--color', colors[Math.floor(Math.random() * colors.length)]);
+               confetti.style.left = `${Math.random() * 100}vw`;
+               confetti.style.top = `${Math.random() * -100}px`; // Start above screen
+               confetti.style.animationDelay = `${Math.random() * 2}s`;
+               confetti.style.animationDuration = `${3 + Math.random() * 2}s`;
+               document.body.appendChild(confetti);
+           }
+           setTimeout(removeConfetti, 5000);
+       }
+
+
+       /**
+        * Removes all confetti elements from the DOM.
+        */
+       function removeConfetti() {
+           const allConfetti = document.querySelectorAll('.confetti');
+           allConfetti.forEach(c => c.remove());
+       }
+
+
+       // --- Firebase Integration and Data Paths ---
+       // Firestore security rules (example - you'll need to set these in your Firebase project):
+       // rules_version = '2';
+       // service cloud.firestore {
+       //   match /databases/{database}/documents {
+       //     match /artifacts/{appId}/public/data/family_responses/{documentId} {
+       //       allow read, write: if request.auth != null;
+       //     }
+       //   }
+       // }
+
+
+   </script>
+</body>
+</html>
+
+
